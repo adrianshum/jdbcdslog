@@ -15,20 +15,22 @@ import org.slf4j.Logger;
  * @author a511990
  */
 public abstract class StatementLoggingHandlerTemplate extends LoggingHandlerSupport {
+    protected int connectionId;
 
-    public StatementLoggingHandlerTemplate(Object target) {
+    public StatementLoggingHandlerTemplate(int connectionId, Object target) {
         super(target);
+        this.connectionId = connectionId;
     }
 
 
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 
         try {
-            boolean needsLog = needsLogging(proxy, method, args);
+            boolean needsLog = needsLogging(method);
             long startTimeInNano = 0;
             StringBuilder sb= null;
 
-            if (isAddBatch(proxy, method, args)) {
+            if (isAddBatch(method)) {
                 if (!ConfigurationParameters.logAddBatchDetail) {
                     needsLog = false;
                 }
@@ -46,7 +48,7 @@ public abstract class StatementLoggingHandlerTemplate extends LoggingHandlerSupp
                 }
                 sb.append(method.getDeclaringClass().getName()).append(".").append(method.getName()).append(": ");
 
-                if (isExecuteBatch(proxy, method, args)) {
+                if (isExecuteBatch(method)) {
                     if (ConfigurationParameters.logExecuteBatchDetail) {
                         appendBatchStatements(sb);
                     }
@@ -92,44 +94,46 @@ public abstract class StatementLoggingHandlerTemplate extends LoggingHandlerSupp
 
     protected abstract void appendBatchStatements(StringBuilder sb);
 
-    protected boolean isExecuteBatch(Object proxy, Method method, Object[] args) {
+    protected boolean isExecuteBatch(Method method) {
         return method.getName().equals("executeBatch");
     }
 
 
-    protected boolean isAddBatch(Object proxy, Method method, Object[] args) {
+    protected boolean isAddBatch(Method method) {
         return method.getName().equals("addBatch");
     }
 
 
     protected abstract void appendStatement(StringBuilder sb, Object proxy, Method method, Object[] args) ;
 
-    protected boolean needsLogging(Object proxy, Method method, Object[] args) {
+    protected boolean needsLogging(Method method) {
         return false;
     }
 
     protected void logBeforeInvoke(Object proxy, Method method, Object[] args, StringBuilder sb) {
         if (ConfigurationParameters.logBeforeStatement) {
-            getLogger().info(sb.toString());
+            getLogger().info("[Conn #" + connectionId + "] " + sb.toString());
         }
     }
 
     protected Object doAfterInvoke(Object proxy, Method method, Object[] args, Object result) {
-        return wrap(result);
+        return wrap(result, connectionId);
     }
 
     protected void logAfterInvoke(Object proxy, Method method, Object[] args, Object result, long elapsedTimeInNano, StringBuilder message) {
 
-        StringBuilder endMessage = message;
+        StringBuilder endMessage = new StringBuilder("[Conn #").append(connectionId).append("] ");
         if ( ! ConfigurationParameters.logDetailAfterStatement) {
             // replace the log message to a simple message
 
-            endMessage = new StringBuilder("END:    ")
+            endMessage.append("END:    ")
                         .append(method.getDeclaringClass().getName()).append(".").append(method.getName())
                         .append(": ");
             appendStackTrace(endMessage);
             appendElapsedTime(endMessage, elapsedTimeInNano);
 
+        } else {
+            endMessage.append(message);
         }
 
         getLogger().info(endMessage.toString());
@@ -145,7 +149,7 @@ public abstract class StatementLoggingHandlerTemplate extends LoggingHandlerSupp
     }
 
     protected void handleException(Throwable t, Object proxy, Method method, Object[] args) throws Throwable {
-        LogUtils.handleException(t, getLogger(), LogUtils.createLogEntry(method, null, null, null));
+        LogUtils.handleException(t, getLogger(), LogUtils.createLogEntry(method, connectionId, null, null, null));
     }
 
     protected Logger getLogger() {

@@ -30,14 +30,14 @@ public class PreparedStatementLoggingHandler extends StatementLoggingHandlerTemp
     protected static final Set<String> EXECUTE_METHODS
             = new HashSet<String>(Arrays.asList("addBatch", "execute", "executeQuery", "executeUpdate", "executeBatch" ));
 
-    public PreparedStatementLoggingHandler(PreparedStatement ps, String sql) {
-        super(ps);
+    public PreparedStatementLoggingHandler(int connectionId, PreparedStatement ps, String sql) {
+        super(connectionId, ps);
         this.sql = sql;
     }
 
 
     @Override
-    protected boolean needsLogging(Object proxy,Method method, Object[] args) {
+    protected boolean needsLogging(Method method) {
         return (statementLogger.isInfoEnabled() || slowQueryLogger.isInfoEnabled())
                 && EXECUTE_METHODS.contains(method.getName());
     }
@@ -71,12 +71,12 @@ public class PreparedStatementLoggingHandler extends StatementLoggingHandlerTemp
             if (r == target && unwrapClass.isInstance(proxy)) {
                 r = proxy;      // returning original proxy if it is enough to represent the unwrapped obj
             } else if (unwrapClass.isInterface() && PreparedStatement.class.isAssignableFrom(unwrapClass)) {
-                r = wrapByPreparedStatementProxy(r, sql);
+                r = wrapByPreparedStatementProxy(connectionId, (PreparedStatement) r, sql);
             }
         }
 
         if (r instanceof ResultSet) {
-            r = wrapByResultSetProxy((ResultSet) r);
+            r = wrapByResultSetProxy(connectionId, (ResultSet) r);
         }
 
 
@@ -98,7 +98,7 @@ public class PreparedStatementLoggingHandler extends StatementLoggingHandlerTemp
 
     @Override
     protected void handleException(Throwable t, Object proxy, Method method, Object[] args) throws Throwable {
-        LogUtils.handleException(t, statementLogger, LogUtils.createLogEntry(method, sql, parameters, null));
+        LogUtils.handleException(t, statementLogger, LogUtils.createLogEntry(method, connectionId, sql, parameters, null));
     }
 
 

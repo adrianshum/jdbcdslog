@@ -8,12 +8,14 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 
 public class ResultSetLoggingHandler extends LoggingHandlerSupport {
+    private int connectionId;
     private ResultSet targetResultSet = null;
     private int resultCount = 0;
     private long totalFetchTime = 0;
 
-    public ResultSetLoggingHandler(ResultSet target) {
+    public ResultSetLoggingHandler(int connectionId, ResultSet target) {
         super(target);
+        this.connectionId = connectionId;
         this.targetResultSet = target;
     }
 
@@ -25,7 +27,7 @@ public class ResultSetLoggingHandler extends LoggingHandlerSupport {
         try {
             r = method.invoke(targetResultSet, args);
         } catch (Throwable e) {
-            LogUtils.handleException(e, resultSetLogger, LogUtils.createLogEntry(method, null, null, null));
+            LogUtils.handleException(e, resultSetLogger, LogUtils.createLogEntry(method, connectionId, null, null, null));
         }
 
         if (UNWRAP_METHOD_NAME.equals(method.getName())) {
@@ -33,7 +35,7 @@ public class ResultSetLoggingHandler extends LoggingHandlerSupport {
             if (r == target && unwrapClass.isInstance(proxy)) {
                 r = proxy;      // returning original proxy if it is enough to represent the unwrapped obj
             } else if (unwrapClass.isInterface() && ResultSet.class.isAssignableFrom(unwrapClass)) {
-                r = wrapByResultSetProxy(targetResultSet);
+                r = wrapByResultSetProxy(connectionId, targetResultSet);
             }
         }
 
@@ -47,7 +49,8 @@ public class ResultSetLoggingHandler extends LoggingHandlerSupport {
                 if (resultSetLogger.isDebugEnabled()) {
 
                     ResultSetMetaData md = targetResultSet.getMetaData();
-                    StringBuilder sb = new StringBuilder(method.getDeclaringClass().getName()).append(".").append(method.getName()).append(": ");
+                    StringBuilder sb = new StringBuilder("[Conn #").append(connectionId).append("] ")
+                        .append(method.getDeclaringClass().getName()).append(".").append(method.getName()).append(": ");
 
                     sb.append(" {");
                     for (int i = 1; i <= md.getColumnCount(); i++) {
@@ -66,9 +69,10 @@ public class ResultSetLoggingHandler extends LoggingHandlerSupport {
 
             } else {
 
-                StringBuilder sb = new StringBuilder(method.getDeclaringClass().getName()).append(".").append(method.getName()).append(": ")
-                                        .append(" Total Results: ").append(resultCount)
-                                        .append(".  Total Fetch Time: ").append(String.format("%.9f", totalFetchTime/1000000000.0)).append(" s.");
+                StringBuilder sb = new StringBuilder("[Conn #").append(connectionId).append("] ")
+                    .append(method.getDeclaringClass().getName()).append(".").append(method.getName()).append(": ")
+                    .append(" Total Results: ").append(resultCount)
+                    .append(".  Total Fetch Time: ").append(String.format("%.9f", totalFetchTime/1000000000.0)).append(" s.");
                 totalFetchTime = 0;
                 LogUtils.appendStackTrace(sb);
                 LogUtils.appendElapsedTime(sb, elapsedTimeInNano);

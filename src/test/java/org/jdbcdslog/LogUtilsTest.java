@@ -54,7 +54,7 @@ public class LogUtilsTest {
 
         assertEquals(
                 "org.jdbcdslog.LogUtilsTest.testOracleCreateLogEntryWithFourParamsCase1: select * from mc_instr where instr_cde = 'IN\\S$T\\$S4R0''3'||chr(38)||'0''11'||chr(10)||'1'||chr(9)||'2'||chr(10)||'line' and instcl_id = 1 and expr_date = to_date('2011-01-01', 'yyyy-MM-dd') and last_upd_time = to_timestamp('2011-01-01 23:59:59.000', 'yyyy-MM-dd hh24:mi:ss.ff3');",
-                LogUtils.createLogEntry(method, sql, parameters, null).toString());
+                LogUtils.createLogEntry(method, 0, sql, parameters, null).toString());
     }
 
     @Test
@@ -73,25 +73,25 @@ public class LogUtilsTest {
 
         assertEquals(
                 "org.jdbcdslog.LogUtilsTest.testOracleCreateLogEntryWithFourParamsCase2: select * from mc_instr where instr_cde = 'IN\\S$T\\$S4R0''3'||chr(38)||'0''11'||chr(10)||'1'||chr(9)||'2'||chr(10)||'line' and instcl_id = 1 and expr_date = to_date('2011-01-01', 'yyyy-MM-dd') and last_upd_time = to_timestamp('2011-01-01 23:59:59.000', 'yyyy-MM-dd hh24:mi:ss.ff3');",
-                LogUtils.createLogEntry(method, sql, null, nameParameters).toString());
+                LogUtils.createLogEntry(method, 0, sql, null, nameParameters).toString());
     }
 
     @Test
     public void testOracleCreateLogEntryWithFourParamsCase3() {
-        assertEquals("", LogUtils.createLogEntry(null, null, null, null).toString());
+        assertEquals("", LogUtils.createLogEntry(null, 0, null, null, null).toString());
     }
 
     @Test
     public void testOracleCreateLogEntryWithFourParamsCase4() throws Exception {
         Method method = LogUtilsTest.class.getMethod("testOracleCreateLogEntryWithFourParamsCase4");
-        assertEquals("org.jdbcdslog.LogUtilsTest.testOracleCreateLogEntryWithFourParamsCase4: ", LogUtils.createLogEntry(method, null, null, null).toString());
+        assertEquals("org.jdbcdslog.LogUtilsTest.testOracleCreateLogEntryWithFourParamsCase4: ", LogUtils.createLogEntry(method, 0, null, null, null).toString());
     }
 
     @Test
     public void testOracleCreateLogEntryWithFourParamsCase5() throws Exception {
         Method method = LogUtilsTest.class.getMethod("testOracleCreateLogEntryWithFourParamsCase5");
         String sql = "select * from mc_instr";
-        assertEquals("org.jdbcdslog.LogUtilsTest.testOracleCreateLogEntryWithFourParamsCase5: select * from mc_instr;", LogUtils.createLogEntry(method, sql, null, null).toString());
+        assertEquals("org.jdbcdslog.LogUtilsTest.testOracleCreateLogEntryWithFourParamsCase5: select * from mc_instr;", LogUtils.createLogEntry(method, 0, sql, null, null).toString());
     }
 
     // TODO: i want to mock the static variable(ConfigurationParameters.rdbmsSpecifics) in unit test,but failure,if you have good advices or ideas,please share with me.Thanks.

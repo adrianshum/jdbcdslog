@@ -15,12 +15,12 @@ public class StatementLoggingHandler extends StatementLoggingHandlerTemplate {
     protected final static Set<String> EXECUTE_METHODS = new HashSet<String>(Arrays.asList("addBatch", "execute", "executeQuery", "executeUpdate", "executeBatch"));
     protected StringBuilder batchStatements = null;
 
-    public StatementLoggingHandler(Statement statement) {
-        super(statement);
+    public StatementLoggingHandler(int connectionId, Statement statement) {
+        super(connectionId, statement);
     }
 
     @Override
-    protected boolean needsLogging(Object proxy,Method method, Object[] args) {
+    protected boolean needsLogging(Method method) {
         return (statementLogger.isInfoEnabled() || slowQueryLogger.isInfoEnabled())
                 && EXECUTE_METHODS.contains(method.getName());
     }
@@ -36,7 +36,7 @@ public class StatementLoggingHandler extends StatementLoggingHandlerTemplate {
             this.batchStatements = new StringBuilder();
         }
 
-        this.batchStatements.append("\n");
+        this.batchStatements.append("\n\t");
         appendStatement(batchStatements, proxy, method, args);
         this.batchStatements.append(';');
 
@@ -59,12 +59,12 @@ public class StatementLoggingHandler extends StatementLoggingHandlerTemplate {
             if (r == target && unwrapClass.isInstance(proxy)) {
                 r = proxy;      // returning original proxy if it is enough to represent the unwrapped obj
             } else if (unwrapClass.isInterface() && Statement.class.isAssignableFrom(unwrapClass)) {
-                r = wrapByStatementProxy(r);
+                r = wrapByStatementProxy(connectionId, (Statement) r);
             }
         }
 
         if (r instanceof ResultSet) {
-            r = wrapByResultSetProxy((ResultSet) r);
+            r = wrapByResultSetProxy(connectionId, (ResultSet) r);
         }
 
         return r;
@@ -72,9 +72,8 @@ public class StatementLoggingHandler extends StatementLoggingHandlerTemplate {
 
     @Override
     protected void handleException(Throwable t, Object proxy, Method method, Object[] args) throws Throwable {
-        LogUtils.handleException(t,
-                statementLogger,
-                LogUtils.createLogEntry(method, (args == null || args.length == 0) ? null : args[0].toString(), null, null));
+        LogUtils.handleException(t, statementLogger,
+                LogUtils.createLogEntry(method, connectionId, (args == null || args.length == 0) ? null : args[0].toString(), null, null));
     }
 
 }

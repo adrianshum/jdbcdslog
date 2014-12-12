@@ -45,10 +45,6 @@ public class DataSourceProxyBase implements Serializable {
         }
         if (targetDs instanceof DataSource) {
             Connection con = ((DataSource) targetDs).getConnection();
-            if (connectionLogger.isInfoEnabled()) {
-                String message = LogUtils.appendStackTrace("connect to URL {} for user {}");
-                connectionLogger.info(message, con.getMetaData().getURL(), con.getMetaData().getUserName());
-            }
             return ProxyUtils.wrapByConnectionProxy(con);
         } else {
             throw new SQLException("targetDS doesn't implement DataSource interface.");
@@ -61,11 +57,6 @@ public class DataSourceProxyBase implements Serializable {
         }
         if (targetDs instanceof DataSource) {
             Connection con = ((DataSource) targetDs).getConnection(username, password);
-
-            if (connectionLogger.isInfoEnabled()) {
-                String message = LogUtils.appendStackTrace("connect to URL {} for user {}");
-                connectionLogger.info(message, con.getMetaData().getURL(), con.getMetaData().getUserName());
-            }
             return ProxyUtils.wrapByConnectionProxy(con);
         } else {
             throw new SQLException("targetDS doesn't implement DataSource interface.");

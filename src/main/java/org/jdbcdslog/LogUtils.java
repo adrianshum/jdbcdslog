@@ -29,10 +29,6 @@ public class LogUtils {
 
     /**
      * Append Elapsed Time to log message if it is configured to be included.
-     *
-     * @param sb
-     * @param elapsedTimeInNano
-     * @return
      */
     public static StringBuilder appendElapsedTime(StringBuilder sb, long elapsedTimeInNano) {
         if (ConfigurationParameters.showTime) {
@@ -42,11 +38,18 @@ public class LogUtils {
 
     }
 
-    public static String appendStackTrace(String message) {
+    public static String appendStackTrace(int connectionId, String message) {
+        StringBuilder sb = new StringBuilder();
+        if (connectionId > 0) {
+            sb.append("[Conn #")
+                .append(connectionId)
+                .append("] ");
+        }
+        sb.append(message);
         if (ConfigurationParameters.printStackTrace) {
-            return appendStackTrace(new StringBuilder(message)).toString();
+            return appendStackTrace(sb).toString();
         } else {
-            return message;
+            return sb.toString();
         }
     }
 
@@ -77,7 +80,7 @@ public class LogUtils {
 
     public static int firstNonJdbcDsLogStackIndex(StackTraceElement[] stackTraces) {
         int i = 0;
-        for (i = 0; i < stackTraces.length; ++i) {
+        for (; i < stackTraces.length; ++i) {
             if ( ! stackTraces[i].getClassName().startsWith("org.jdbcdslog")) {
                 break;
             }
@@ -93,8 +96,11 @@ public class LogUtils {
         return i;
     }
 
-    public static StringBuilder createLogEntry(Method method, String sql, Map<Integer,Object> parameters, Map<String,Object> namedParameters) {
+    public static StringBuilder createLogEntry(Method method, int connectionId, String sql, Map<Integer,Object> parameters, Map<String,Object> namedParameters) {
         StringBuilder s = new StringBuilder();
+        if (connectionId > 0) {
+            s.append("[Conn #").append(connectionId).append("] ");
+        }
         if (method != null) {
             s.append(method.getDeclaringClass().getName()).append(".").append(method.getName()).append(": ");
         }
@@ -146,13 +152,13 @@ public class LogUtils {
         if (ConfigurationParameters.inlineQueryParams) {
             if (parameters != null) {
                 for (Map<Integer, Object> p : parameters) {
-                    s.append("\n");
+                    s.append("\n\t");
                     appendSqlWithInlineIndexedParams(s, sql, p);
                 }
             }
             if (namedParameters != null) {
                 for (Map<String, Object> p : namedParameters) {
-                    s.append("\n");
+                    s.append("\n\t");
                     appendSqlWithInlineNamedParams(s, sql, p);
                 }
             }
@@ -237,7 +243,6 @@ public class LogUtils {
         // index on index that the match was found
         int textIndex = -1;
         int replaceIndex = -1;
-        int tempIndex = -1;
 
         // index of replace array that will replace the search string found
         // NOTE: logic duplicated below START
@@ -246,7 +251,7 @@ public class LogUtils {
                     searchList[i].length() == 0 || replacementList[i] == null) {
                 continue;
             }
-            tempIndex = text.indexOf(searchList[i]);
+            int tempIndex = text.indexOf(searchList[i]);
 
             // see if we need to keep searching for this
             if (tempIndex == -1) {
@@ -296,7 +301,6 @@ public class LogUtils {
 
             textIndex = -1;
             replaceIndex = -1;
-            tempIndex = -1;
             // find the next earliest match
             // NOTE: logic mostly duplicated above START
             for (int i = 0; i < searchLength; i++) {
@@ -304,7 +308,7 @@ public class LogUtils {
                         searchList[i].length() == 0 || replacementList[i] == null) {
                     continue;
                 }
-                tempIndex = text.indexOf(searchList[i], start);
+                int tempIndex = text.indexOf(searchList[i], start);
 
                 // see if we need to keep searching for this
                 if (tempIndex == -1) {
@@ -323,8 +327,7 @@ public class LogUtils {
         for (int i = start; i < textLength; i++) {
             buf.append(text.charAt(i));
         }
-        String result = buf.toString();
 
-        return result;
+        return buf.toString();
     }
 }
