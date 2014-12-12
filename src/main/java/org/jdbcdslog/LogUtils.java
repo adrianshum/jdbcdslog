@@ -151,22 +151,28 @@ public class LogUtils {
 
         if (ConfigurationParameters.inlineQueryParams) {
             if (parameters != null) {
-                for (Map<Integer, Object> p : parameters) {
-                    s.append("\n\t");
-                    appendSqlWithInlineIndexedParams(s, sql, p);
+                if (parameters.size() == 1) {
+                    appendSqlWithInlineIndexedParams(s, sql, parameters.get(0));
+                } else {
+                    for (Map<Integer, Object> p : parameters) {
+                        s.append("\n\t");
+                        appendSqlWithInlineIndexedParams(s, sql, p);
+                    }
                 }
             }
             if (namedParameters != null) {
-                for (Map<String, Object> p : namedParameters) {
-                    s.append("\n\t");
-                    appendSqlWithInlineNamedParams(s, sql, p);
+                if (namedParameters.size() == 1) {
+                    appendSqlWithInlineNamedParams(s, sql, namedParameters.get(0));
+                } else {
+                    for (Map<String, Object> p : namedParameters) {
+                        s.append("\n\t");
+                        appendSqlWithInlineNamedParams(s, sql, p);
+                    }
                 }
             }
         } else {    // display separate query parameters
             appendBatchSqlsWithSeparateParams(s, sql, parameters, namedParameters);
-
         }
-
     }
 
     protected static void appendBatchSqlsWithSeparateParams(StringBuilder s,
