@@ -17,13 +17,18 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
 import javax.sql.PooledConnection;
 import javax.sql.XAConnection;
+
+import static org.jdbcdslog.Loggers.connectionLogger;
+
 
 /**
  * @author a511990
@@ -34,11 +39,6 @@ public class ProxyUtils {
     /**
      * Find out all interfaces from clazz that is compatible with requiredInterface,
      * and generate proxy base on that.
-     *
-     * @param clazz
-     * @param requiredInterface
-     * @param invocationHandler
-     * @return
      */
     @SuppressWarnings("unchecked")
     public static <T> T proxyForCompatibleInterfaces(Class<?> clazz, Class<T> requiredInterface, InvocationHandler invocationHandler) {
@@ -50,10 +50,6 @@ public class ProxyUtils {
 
     /**
      * Find all interfaces of clazz that is-a requiredInterface.
-     *
-     * @param clazz
-     * @param requiredInterface
-     * @return
      */
     public static Class<?>[] findCompatibleInterfaces(Class<?> clazz, Class<?> requiredInterface) {
         ArrayList<Class<?>> interfaces = new ArrayList<Class<?>>();
@@ -68,24 +64,35 @@ public class ProxyUtils {
     }
 
 
-    public static Statement wrapByStatementProxy(Object r) {
-        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), Statement.class, new StatementLoggingHandler((Statement) r));
+    public static Statement wrapByStatementProxy(int connectionId, Statement r) {
+        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), Statement.class, new StatementLoggingHandler(connectionId, r));
     }
 
-    public static PreparedStatement wrapByPreparedStatementProxy(Object r, String sql) {
-        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), PreparedStatement.class, new PreparedStatementLoggingHandler((PreparedStatement) r, sql));
+    public static PreparedStatement wrapByPreparedStatementProxy(int connectionId, PreparedStatement r, String sql) {
+        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), PreparedStatement.class, new PreparedStatementLoggingHandler(connectionId, r, sql));
     }
 
-    public static CallableStatement wrapByCallableStatementProxy(Object r, String sql) {
-        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), CallableStatement.class, new CallableStatementLoggingHandler((CallableStatement) r, sql));
+    public static CallableStatement wrapByCallableStatementProxy(int connectionId, CallableStatement r, String sql) {
+        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), CallableStatement.class, new CallableStatementLoggingHandler(connectionId, r, sql));
     }
 
-    public static Connection wrapByConnectionProxy(Object r) {
-        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), Connection.class, new ConnectionLoggingHandler(r));
+    public static Connection wrapByConnectionProxy(Connection r) {
+        ConnectionLoggingHandler loggingHandler = new ConnectionLoggingHandler(r);
+        if (connectionLogger.isInfoEnabled()) {
+            try {
+                DatabaseMetaData md = r.getMetaData();
+                String message = LogUtils.appendStackTrace(loggingHandler.connectionId, "Connected to URL {} for user {}");
+                connectionLogger.info(message, md.getURL(), md.getUserName());
+            } catch (SQLException ex) {
+                connectionLogger.error("Problem reading metadata", ex);
+            }
+        }
+
+        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), Connection.class, loggingHandler);
     }
 
-    public static ResultSet wrapByResultSetProxy(ResultSet r) {
-        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), ResultSet.class, new ResultSetLoggingHandler(r));
+    public static ResultSet wrapByResultSetProxy(int connectionId, ResultSet r) {
+        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), ResultSet.class, new ResultSetLoggingHandler(connectionId, r));
     }
 
     public static XAConnection wrapByXaConnection(XAConnection con) {
@@ -96,34 +103,25 @@ public class ProxyUtils {
         return ProxyUtils.proxyForCompatibleInterfaces(con.getClass(), PooledConnection.class, new ConnectionSourceLoggingHandler(con));
     }
 
-    public static Object wrapByConnectionSourceProxy(Object r, Class<?> interf) {
-        return ProxyUtils.proxyForCompatibleInterfaces(r.getClass(), interf, new ConnectionSourceLoggingHandler(r));
-    }
-
 
     /**
      * Convenient helper to wrap object base on its type.
-     *
-     * @param r
-     * @param args
-     * @return
-     * @throws Exception
      */
-    public static Object wrap(Object r, Object...args) {
+    public static Object wrap(Object r, int connectionId) {
+        if (r == null) {
+            return null;
+        }
+        if (Proxy.isProxyClass(r.getClass())) {
+            throw new IllegalStateException("This should never happen!");
+        }
         if (r instanceof Connection) {
-            return wrapByConnectionProxy(r);
-        } else if (r instanceof CallableStatement) {
-            return wrapByCallableStatementProxy(r, (String) args[0]);
-        } else if (r instanceof PreparedStatement) {
-            return wrapByPreparedStatementProxy(r, (String) args[0]);
+            return wrapByConnectionProxy((Connection)r);
         } else if (r instanceof Statement) {
-            return wrapByStatementProxy(r);
+            return wrapByStatementProxy(connectionId, (Statement) r);
         } else if (r instanceof ResultSet) {
-            return wrapByResultSetProxy((ResultSet) r);
+            return wrapByResultSetProxy(connectionId, (ResultSet) r);
         } else {
             return r;
         }
     }
-
-
 }

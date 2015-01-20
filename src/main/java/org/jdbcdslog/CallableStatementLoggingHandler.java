@@ -16,12 +16,12 @@ public class CallableStatementLoggingHandler extends PreparedStatementLoggingHan
     protected TreeMap<String, Object> namedParameters = new TreeMap<String, Object>();
     protected List<Map<String, Object>> batchNamedParameters = null;
 
-    public CallableStatementLoggingHandler(CallableStatement ps, String sql) {
-        super(ps, sql);
+    public CallableStatementLoggingHandler(int connectionId, CallableStatement ps, String sql) {
+        super(connectionId, ps, sql);
     }
 
     @Override
-    protected boolean needsLogging(Object proxy,Method method, Object[] args) {
+    protected boolean needsLogging(Method method) {
         return (statementLogger.isInfoEnabled() || slowQueryLogger.isInfoEnabled())
                 && EXECUTE_METHODS.contains(method.getName());
     }
@@ -57,12 +57,12 @@ public class CallableStatementLoggingHandler extends PreparedStatementLoggingHan
             if (r == target && unwrapClass.isInstance(proxy)) {
                 r = proxy;      // returning original proxy if it is enough to represent the unwrapped obj
             } else if (unwrapClass.isInterface() && CallableStatement.class.isAssignableFrom(unwrapClass)) {
-                r = wrapByCallableStatementProxy(r, sql);
+                r = wrapByCallableStatementProxy(connectionId, (CallableStatement)r, sql);
             }
         }
 
         if (r instanceof ResultSet) {
-            r = wrapByResultSetProxy((ResultSet) r);
+            r = wrapByResultSetProxy(connectionId, (ResultSet) r);
         }
 
         if (SET_METHODS.contains(method.getName())) {
@@ -81,7 +81,7 @@ public class CallableStatementLoggingHandler extends PreparedStatementLoggingHan
 
     @Override
     protected void handleException(Throwable t, Object proxy, Method method, Object[] args) throws Throwable {
-        LogUtils.handleException(t, statementLogger, LogUtils.createLogEntry(method, sql, parameters, namedParameters));
+        LogUtils.handleException(t, statementLogger, LogUtils.createLogEntry(method, connectionId, sql, parameters, namedParameters));
     }
 
 }

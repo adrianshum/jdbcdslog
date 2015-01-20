@@ -39,7 +39,7 @@ public class DriverLoggingProxy implements Driver {
 
     public Connection connect(String url, Properties info) throws SQLException {
         if (connectionLogger.isInfoEnabled()) {
-            String message = LogUtils.appendStackTrace("connect to URL {} with properties: {}");
+            String message = LogUtils.appendStackTrace(0, "Connecting to URL {} with properties: {}");
             connectionLogger.info(message, url, info);
         }
         if (!acceptsURL(url)) {

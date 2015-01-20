@@ -6,21 +6,19 @@ import static org.jdbcdslog.ProxyUtils.*;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 
 public class StatementLoggingHandler extends StatementLoggingHandlerTemplate {
     protected final static Set<String> EXECUTE_METHODS = new HashSet<String>(Arrays.asList("addBatch", "execute", "executeQuery", "executeUpdate", "executeBatch"));
-    protected StringBuilder batchStatements = null;
+    protected List<String> batchStatements = null;
 
-    public StatementLoggingHandler(Statement statement) {
-        super(statement);
+    public StatementLoggingHandler(int connectionId, Statement statement) {
+        super(connectionId, statement);
     }
 
     @Override
-    protected boolean needsLogging(Object proxy,Method method, Object[] args) {
+    protected boolean needsLogging(Method method) {
         return (statementLogger.isInfoEnabled() || slowQueryLogger.isInfoEnabled())
                 && EXECUTE_METHODS.contains(method.getName());
     }
@@ -33,19 +31,26 @@ public class StatementLoggingHandler extends StatementLoggingHandlerTemplate {
     @Override
     protected void doAddBatch(Object proxy, Method method, Object[] args) {
         if (this.batchStatements == null) {
-            this.batchStatements = new StringBuilder();
+            this.batchStatements = new ArrayList<String>();
         }
 
-        this.batchStatements.append("\n");
-        appendStatement(batchStatements, proxy, method, args);
-        this.batchStatements.append(';');
+        StringBuilder sb = new StringBuilder();
+        appendStatement(sb, proxy, method, args);
+        sb.append(";");
+        this.batchStatements.add(sb.toString());
 
     }
 
     @Override
     protected void appendBatchStatements(StringBuilder sb) {
         if (this.batchStatements != null) {
-            sb.append(batchStatements);
+            if (batchStatements.size() == 1) {
+                sb.append(batchStatements.get(0));
+            } else {
+                for (String s : batchStatements) {
+                    sb.append("\n\t").append(s);
+                }
+            }
             this.batchStatements = null;
         }
     }
@@ -59,12 +64,12 @@ public class StatementLoggingHandler extends StatementLoggingHandlerTemplate {
             if (r == target && unwrapClass.isInstance(proxy)) {
                 r = proxy;      // returning original proxy if it is enough to represent the unwrapped obj
             } else if (unwrapClass.isInterface() && Statement.class.isAssignableFrom(unwrapClass)) {
-                r = wrapByStatementProxy(r);
+                r = wrapByStatementProxy(connectionId, (Statement) r);
             }
         }
 
         if (r instanceof ResultSet) {
-            r = wrapByResultSetProxy((ResultSet) r);
+            r = wrapByResultSetProxy(connectionId, (ResultSet) r);
         }
 
         return r;
@@ -72,9 +77,8 @@ public class StatementLoggingHandler extends StatementLoggingHandlerTemplate {
 
     @Override
     protected void handleException(Throwable t, Object proxy, Method method, Object[] args) throws Throwable {
-        LogUtils.handleException(t,
-                statementLogger,
-                LogUtils.createLogEntry(method, (args == null || args.length == 0) ? null : args[0].toString(), null, null));
+        LogUtils.handleException(t, statementLogger,
+                LogUtils.createLogEntry(method, connectionId, (args == null || args.length == 0) ? null : args[0].toString(), null, null));
     }
 
 }

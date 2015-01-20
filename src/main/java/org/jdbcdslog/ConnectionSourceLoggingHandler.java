@@ -35,19 +35,10 @@ public class ConnectionSourceLoggingHandler extends LoggingHandlerSupport {
 
         try {
             Object r = method.invoke(target, args);
-
-            if (r instanceof Connection) {
-                DatabaseMetaData connMetaData = ((Connection) r).getMetaData();
-                if (connectionLogger.isInfoEnabled()) {
-                    String message = LogUtils.appendStackTrace("connect to URL {} for user {}");
-                    connectionLogger.info(message, connMetaData.getURL(), connMetaData.getUserName());
-                }
-            }
-
-            return wrap(r);
+            return wrap(r, 0);
 
         } catch (Throwable t) {
-            LogUtils.handleException(t, connectionLogger, LogUtils.createLogEntry(method, null, null, null));
+            LogUtils.handleException(t, connectionLogger, LogUtils.createLogEntry(method, 0, null, null, null));
         }
         return null;
     }
