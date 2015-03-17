@@ -84,23 +84,27 @@ public class DataSourceProxyBase implements Serializable {
     }
 
     public void setLogWriter(PrintWriter out) throws SQLException {
-        if (targetDs instanceof DataSource)
+        if (targetDs instanceof DataSource) {
             ((DataSource) targetDs).setLogWriter(out);
-        if (targetDs instanceof XADataSource)
+        } else if (targetDs instanceof XADataSource) {
             ((XADataSource) targetDs).setLogWriter(out);
-        if (targetDs instanceof ConnectionPoolDataSource)
+        } else if (targetDs instanceof ConnectionPoolDataSource) {
             ((ConnectionPoolDataSource) targetDs).setLogWriter(out);
-        throw new SQLException("targetDS doesn't have setLogWriter() method");
+        } else {
+            throw new SQLException("targetDS doesn't have setLogWriter() method");
+        }
     }
 
     public void setLoginTimeout(int seconds) throws SQLException {
-        if (targetDs instanceof DataSource)
+        if (targetDs instanceof DataSource) {
             ((DataSource) targetDs).setLoginTimeout(seconds);
-        if (targetDs instanceof XADataSource)
+        } else if (targetDs instanceof XADataSource) {
             ((XADataSource) targetDs).setLoginTimeout(seconds);
-        if (targetDs instanceof ConnectionPoolDataSource)
+        } else if (targetDs instanceof ConnectionPoolDataSource) {
             ((ConnectionPoolDataSource) targetDs).setLoginTimeout(seconds);
-        throw new SQLException("targetDS doesn't have setLogWriter() method");
+        } else {
+            throw new SQLException("targetDS doesn't have setLogWriter() method");
+        }
     }
 
     public XAConnection getXAConnection() throws SQLException {

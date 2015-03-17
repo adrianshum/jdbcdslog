@@ -6,19 +6,15 @@ import static org.jdbcdslog.ProxyUtils.*;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 
 public class StatementLoggingHandler extends StatementLoggingHandlerTemplate<Statement> {
     protected final static Set<String> EXECUTE_METHODS = new HashSet<String>(Arrays.asList("addBatch", "execute", "executeQuery", "executeUpdate", "executeBatch"));
-    protected StringBuilder batchStatements = null;
-    protected LogMetaData logMetaData;
+    protected List<String> batchStatements = null;
 
     public StatementLoggingHandler(LogMetaData logMetaData, Statement statement) {
-        super(statement);
-        this.logMetaData = logMetaData;
+        super(logMetaData, statement);
     }
 
     @Override
@@ -35,19 +31,26 @@ public class StatementLoggingHandler extends StatementLoggingHandlerTemplate<Sta
     @Override
     protected void doAddBatch(Object proxy, Method method, Object[] args) {
         if (this.batchStatements == null) {
-            this.batchStatements = new StringBuilder();
+            this.batchStatements = new ArrayList<String>();
         }
 
-        this.batchStatements.append("\n");
-        appendStatement(batchStatements, proxy, method, args);
-        this.batchStatements.append(';');
+        StringBuilder sb = new StringBuilder();
+        appendStatement(sb, proxy, method, args);
+        sb.append(";");
+        this.batchStatements.add(sb.toString());
 
     }
 
     @Override
     protected void appendBatchStatements(StringBuilder sb) {
         if (this.batchStatements != null) {
-            sb.append(batchStatements);
+            if (batchStatements.size() == 1) {
+                sb.append(batchStatements.get(0));
+            } else {
+                for (String s : batchStatements) {
+                    sb.append("\n\t").append(s);
+                }
+            }
             this.batchStatements = null;
         }
     }
