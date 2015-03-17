@@ -31,7 +31,7 @@ public class ConnectionLoggingHandler extends LoggingHandlerSupport<Connection> 
         Map<String,String> oldMdc = LogUtils.setMdc(this.logMetaData);
         if (connectionLogger.isInfoEnabled()) {
             try {
-                DatabaseMetaData md = ((Connection)target).getMetaData();
+                DatabaseMetaData md = target.getMetaData();
                 connectionLogger.info("Connected to URL {} for user {}", md.getURL(), md.getUserName());
             } catch (SQLException ex) {
                 connectionLogger.error("Problem reading connection metadata", ex);
@@ -45,6 +45,12 @@ public class ConnectionLoggingHandler extends LoggingHandlerSupport<Connection> 
         Map<String, String> oldMdc = LogUtils.setMdc(this.logMetaData);
 
         try {
+            if (method.getName().equals("commit") ||
+                    method.getName().equals("rollback")) {
+                if (connectionLogger.isInfoEnabled()) {
+                    connectionLogger.info(LogUtils.appendStackTrace(method.getName()));
+                }
+            }
             Object r = method.invoke(target, args);
             if (UNWRAP_METHOD_NAME.equals(method.getName())) {
                 Class<?> unwrapClass = (Class<?>) args[0];
