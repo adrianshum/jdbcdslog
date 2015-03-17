@@ -12,11 +12,9 @@ import java.util.*;
 public class StatementLoggingHandler extends StatementLoggingHandlerTemplate<Statement> {
     protected final static Set<String> EXECUTE_METHODS = new HashSet<String>(Arrays.asList("addBatch", "execute", "executeQuery", "executeUpdate", "executeBatch"));
     protected List<String> batchStatements = null;
-    protected LogMetaData logMetaData;
 
     public StatementLoggingHandler(LogMetaData logMetaData, Statement statement) {
-        super(statement);
-        this.logMetaData = logMetaData;
+        super(logMetaData, statement);
     }
 
     @Override

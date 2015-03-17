@@ -19,10 +19,6 @@ import org.slf4j.Logger;
 public abstract class StatementLoggingHandlerTemplate<T extends Statement> extends LoggingHandlerSupport<T> {
     protected LogMetaData logMetaData;
 
-    public StatementLoggingHandlerTemplate(T target) {
-        super(target);
-    }
-
     public StatementLoggingHandlerTemplate(LogMetaData logMetaData, T target) {
         super(target);
         this.logMetaData = logMetaData;
