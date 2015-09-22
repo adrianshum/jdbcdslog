@@ -23,7 +23,8 @@ public class ConfigurationParameters {
     static boolean logDetailAfterStatement = true;
     static boolean logAddBatchDetail = true;
     static boolean logAddBatch = true;
-    static boolean logExecuteBatchDetail =true;
+    static boolean logExecuteBatchDetail = true;
+    static boolean logExceptions = true;
 
     static {
         ClassLoader loader = ConfigurationParameters.class.getClassLoader();
@@ -47,6 +48,7 @@ public class ConfigurationParameters {
             initLogAddBatch();
             initLogAddBatchDetail();
             initLogExecuteBatchDetail();
+            initLogExceptions();
 
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -143,5 +145,8 @@ public class ConfigurationParameters {
         logExecuteBatchDetail = "true".equalsIgnoreCase(props.getProperty("jdbcdslog.logExecuteBatchDetail", "false"));
     }
 
+    private static void initLogExceptions() {
+        logExceptions = "true".equalsIgnoreCase(props.getProperty("jdbcdslog.logExceptions", "false"));
+    }
     /* init parameters end. */
 }

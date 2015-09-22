@@ -11,12 +11,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 public class LogUtils {
-
-    static Logger logger = LoggerFactory.getLogger(LogUtils.class);
 
     public final static String CONNECTION_ID_MDC_KEY = "jdbcdslog.connectionId";
 
@@ -27,16 +24,14 @@ public class LogUtils {
             e = ((InvocationTargetException) e).getTargetException();
         }
 
-        l.error(msg.toString(), e);
+        if (ConfigurationParameters.logExceptions) {
+            l.error(msg.toString(), e);
+        }
         throw e;
     }
 
     /**
      * Append Elapsed Time to log message if it is configured to be included.
-     *
-     * @param sb
-     * @param elapsedTimeInNano
-     * @return
      */
     public static StringBuilder appendElapsedTime(StringBuilder sb, long elapsedTimeInNano) {
         if (ConfigurationParameters.showTime) {
@@ -80,7 +75,7 @@ public class LogUtils {
     }
 
     public static int firstNonJdbcDsLogStackIndex(StackTraceElement[] stackTraces) {
-        int i = 0;
+        int i;
         for (i = 0; i < stackTraces.length; ++i) {
             if ( ! stackTraces[i].getClassName().startsWith("org.jdbcdslog")) {
                 break;
@@ -270,7 +265,6 @@ public class LogUtils {
         // index on index that the match was found
         int textIndex = -1;
         int replaceIndex = -1;
-        int tempIndex = -1;
 
         // index of replace array that will replace the search string found
         // NOTE: logic duplicated below START
@@ -279,7 +273,7 @@ public class LogUtils {
                     searchList[i].length() == 0 || replacementList[i] == null) {
                 continue;
             }
-            tempIndex = text.indexOf(searchList[i]);
+            int tempIndex = text.indexOf(searchList[i]);
 
             // see if we need to keep searching for this
             if (tempIndex == -1) {
@@ -329,7 +323,7 @@ public class LogUtils {
 
             textIndex = -1;
             replaceIndex = -1;
-            tempIndex = -1;
+            int tempIndex;
             // find the next earliest match
             // NOTE: logic mostly duplicated above START
             for (int i = 0; i < searchLength; i++) {

@@ -15,6 +15,7 @@ public class ResultSetLoggingHandler extends LoggingHandlerSupport<ResultSet> {
 
     public ResultSetLoggingHandler(LogMetaData logMetaData, ResultSet target) {
         super(target);
+        this.logMetaData = logMetaData;
     }
 
     @Override
