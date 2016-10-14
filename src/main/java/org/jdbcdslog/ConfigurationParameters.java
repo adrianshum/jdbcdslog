@@ -14,6 +14,8 @@ public class ConfigurationParameters {
 
     static long slowQueryThresholdInNano = Long.MAX_VALUE;
     static Boolean showTime = false;
+    static Boolean showTimeInNewLine = true;
+    static Boolean formatTimeInMs = false;
     static boolean printStackTrace = false;
     static boolean printFullStackTrace = false;
     static String printStackTracePattern = null;
@@ -40,6 +42,8 @@ public class ConfigurationParameters {
             initPrintFullStackTrace();
             initPrintStackTracePattern();
             initShowTime();
+            initFormatTimeInMs();
+            initShowTimeInNewLine();
             initInlineQueryParams();
             initRdbmsSpecifics();
             initLogBeforeStatement();
@@ -100,6 +104,14 @@ public class ConfigurationParameters {
 
     private static void initShowTime() {
         showTime = "true".equalsIgnoreCase(props.getProperty("jdbcdslog.showTime", "false"));
+    }
+
+    private static void initShowTimeInNewLine() {
+        showTimeInNewLine = "true".equalsIgnoreCase(props.getProperty("jdbcdslog.showTimeInNewLine", "true"));
+    }
+
+    private static void initFormatTimeInMs() {
+        formatTimeInMs = "true".equalsIgnoreCase(props.getProperty("jdbcdslog.formatTimeInMs", "false"));
     }
 
     private static void initInlineQueryParams() {
