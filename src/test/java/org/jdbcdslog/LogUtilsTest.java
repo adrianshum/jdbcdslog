@@ -1,12 +1,15 @@
 package org.jdbcdslog;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Properties;
 import java.util.TreeMap;
 
 import org.junit.Ignore;
@@ -36,6 +39,31 @@ public class LogUtilsTest {
         assertEquals(
                 "select * from mc_instr where instr_cde = 'IN\\S$T\\$S4R0''3'||chr(38)||'0''11'||chr(10)||'1'||chr(9)||'2'||chr(10)||'line' and instcl_id = 1 and expr_date = to_date('2011-01-01', 'yyyy-MM-dd') and last_upd_time = to_timestamp('2011-01-01 23:59:59.000', 'yyyy-MM-dd hh24:mi:ss.ff3');",
                 sb.toString());
+    }
+
+    @Test
+    public void testElapseTimeDefault() {
+
+        String result = String.format("%.0f", (double)7381589601L / 1000000L);
+
+      //  String result = String.format("%.6f", (long)7381589601L / 1000000000);
+        System.out.println(result);
+
+
+        StringBuilder sb = new StringBuilder();
+        sb = LogUtils.appendElapsedTime(sb, 7381589601L);
+        assertEquals(sb.toString(), "\n" + "Elapsed Time: 7,381589601 s.");
+    }
+
+    @Test
+    public void testElapseTimeShowInNewLine_default() {
+
+        // WHEN
+        StringBuilder sb = new StringBuilder();
+        sb = LogUtils.appendElapsedTime(sb, 7381589601L);
+
+        // THEN
+        assertEquals(sb.toString(), "\nElapsed Time: 7,381589601 s.");
     }
 
     @Test

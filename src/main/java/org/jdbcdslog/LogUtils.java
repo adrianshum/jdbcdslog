@@ -40,10 +40,21 @@ public class LogUtils {
      */
     public static StringBuilder appendElapsedTime(StringBuilder sb, long elapsedTimeInNano) {
         if (ConfigurationParameters.showTime) {
-            sb.append("\nElapsed Time: ").append(String.format("%.9f", elapsedTimeInNano/1000000000.0)).append(" s.");
+
+            if (ConfigurationParameters.showTimeInNewLine) {
+                sb.append("\n");
+            } else {
+                sb.append(" ");
+            }
+
+            sb.append("Elapsed Time: ");
+            if (ConfigurationParameters.formatTimeInMs) {
+                sb.append(String.format("%.0f", elapsedTimeInNano/1000000.0)).append(" ms.");
+            } else {
+                sb.append(String.format("%.9f", elapsedTimeInNano/1000000000.0)).append(" s.");
+            }
         }
         return sb;
-
     }
 
     public static String appendStackTrace(String message) {
